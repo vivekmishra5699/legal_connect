@@ -89,7 +89,7 @@ firebase = pyrebase.initialize_app(FIREBASE_CONFIG)
 firebase_auth = firebase.auth()
 
 # Configure Gemini API
-genai.configure(api_key=os.environ.get('GEMINI_API_KEY', 'AIzaSyDqoqBk-I4xhRCz9ZXbD9SJDOMvWimg5CQ'))
+genai.configure(api_key=os.environ.get('GEMINI_API_KEY', 'api-key'))
 
 @app.context_processor
 def inject_now():
