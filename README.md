@@ -1,5 +1,5 @@
 
-# 🏛️ LegalQA - Interactive Legal Question & Answer Platform
+# 🏛️ Legal_Connect - Interactive Legal Question & Answer Platform
 
 ![LegalQA Banner](https://img.shields.io/badge/Legal-QA-blue?style=for-the-badge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,7 +10,7 @@
 
 ---
 
-**LegalQA** is a comprehensive platform connecting users with legal questions to verified legal professionals and AI-powered guidance. The platform facilitates community discussions around legal topics, provides AI insights, and enables direct communication between users and lawyers.
+**Legal_Connect** is a comprehensive platform connecting users with legal questions to verified legal professionals and AI-powered guidance. The platform facilitates community discussions around legal topics, provides AI insights, and enables direct communication between users and lawyers.
 
 ---
 
