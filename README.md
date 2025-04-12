@@ -61,8 +61,8 @@
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/legalqa.git
-cd legalqa
+git clone https://github.com/vivekmishra5699/legal_connect.git
+cd legal_connect
 
 # 2. Install dependencies
 pip install -r requirements.txt
