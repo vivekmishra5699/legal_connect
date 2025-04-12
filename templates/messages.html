@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Your Messages{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card mb-4 shadow-sm" data-aos="fade-up">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0"><i class="bi bi-chat-dots text-primary me-2"></i>Conversations</h5>
+                <span class="badge bg-primary">{{ conversations|length }}</span>
+            </div>
+
+            <div class="card-body p-0">
+                {% if conversations %}
+                    <div class="list-group list-group-flush">
+                        {% for conversation in conversations %}
+                            <a href="{{ url_for('chat', user_id=conversation.other_user.id) }}" 
+                               class="list-group-item list-group-item-action py-3 {% if conversation.unread_count > 0 %}bg-light{% endif %}">
+                                <div class="row align-items-center">
+                                    <!-- Avatar with online indicator -->
+                                    <div class="col-auto">
+                                        <div class="position-relative">
+                                            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+                                                 style="width: 50px; height: 50px; font-size: 1.2rem; background: var(--gradient-{{ conversation.other_user.id|modulo(3) }}) !important;">
+                                                {{ conversation.other_user.username[0] }}
+                                            </div>
+                                            {% if conversation.other_user.is_online %}
+                                                <span class="position-absolute bottom-0 end-0 bg-success rounded-circle"
+                                                    style="width: 12px; height: 12px; border: 2px solid white;"></span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- User info and message preview -->
+                                    <div class="col">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="mb-0">
+                                                {{ conversation.other_user.username }}
+                                                {% if conversation.other_user.role == 'lawyer' %}
+                                                    <small class="text-success ms-1"><i class="bi bi-patch-check-fill"></i></small>
+                                                {% endif %}
+                                            </h6>
+                                            <small class="text-muted">
+                                                {% if conversation.last_message_time %}
+                                                    {{ conversation.last_message_time|format_date('%b %d') }}
+                                                {% else %}
+                                                    Just now
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <p class="text-muted mb-0 text-truncate" style="max-width: 450px;">
+                                                {% if conversation.last_message %}
+                                                    {{ conversation.last_message }}
+                                                {% else %}
+                                                    Start a conversation...
+                                                {% endif %}
+                                            </p>
+                                            {% if conversation.unread_count > 0 %}
+                                                <span class="badge rounded-pill bg-danger">
+                                                    {{ conversation.unread_count }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-chat-square text-muted" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3">No conversations yet</h6>
+                        <p class="text-muted small mb-4">Connect with legal professionals to start chatting</p>
+                        <a href="{{ url_for('browse_questions') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-search me-1"></i> Find Lawyers
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if conversations %}
+            <div class="card-footer bg-white text-center py-2">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i> 
+                    Conversations are available with lawyers you follow
+                </small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item {
+    transition: background-color 0.2s;
+    border-left: 0;
+    border-right: 0;
+}
+
+.list-group-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    font-weight: 500;
+}
+
+@media (max-width: 576px) {
+    .col {
+        min-width: 0;
+    }
+}
+</style>
+{% endblock %}

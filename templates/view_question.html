@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block title %}{{ question.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Enhanced main post -->
+        <div class="card premium mb-4" data-aos="fade-up">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <!-- Fix the gradient style with proper string conversion -->
+                    <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-2 float-animation" 
+                          style="width: 48px; height: 48px; font-size: 1.2rem; background: var(--gradient-{{ question.id|modulo(3)|string }}) !important;">
+                        {{ question.author.username[0] }}
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center">
+                            <h5 class="mb-0 me-1">{{ question.author.username }}</h5>
+                            <small class="text-muted">@{{ question.author.username|lower }}</small>
+                            {% if question.author.role == 'lawyer' %}
+                                <span class="badge bg-success ms-2"><i class="bi bi-patch-check-fill"></i> Legal Pro</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">{{ question.created_at.strftime('%b %d, %Y') }} · {{ question.created_at.strftime('%H:%M') }}</small>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge bg-primary">{{ question.category }}</span>
+                    {% if current_user.is_authenticated and current_user.id == question.user_id %}
+                        <div class="dropdown d-inline">
+                            <button class="btn btn-sm btn-link text-dark" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i> Edit</a></li>
+                                <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                    <i class="bi bi-trash me-2"></i> Delete
+                                </a></li>
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <h4 class="gradient-text mb-3" style="font-weight: 600;">{{ question.title }}</h4>
+                <div class="mb-4 post-content">
+                    {{ question.content|replace('@LegalAI', '<span class="badge bg-info">@LegalAI</span>')|replace('@legalai', '<span class="badge bg-info">@legalai</span>')|safe }}
+                </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center">
+                    <div class="mb-2">
+                        {% if question.tags %}
+                            {% set tag_list = question.tags.split(',') %}
+                            {% for tag in tag_list %}
+                                <span class="badge bg-light text-dark border me-1 mb-1 tag-badge" data-tag="{{ tag.strip() }}">#{{ tag.strip() }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="d-flex post-actions">
+                        <div class="me-3">
+                            <a href="#comments" class="btn btn-sm btn-link text-decoration-none" id="commentBtn">
+                                <i class="bi bi-chat"></i> <span id="commentCount">{{ answers|length }}</span>
+                            </a>
+                        </div>
+                        <div class="me-3">
+                            <a href="#" class="btn btn-sm btn-link text-decoration-none" onclick="repostQuestion(event)">
+                                <i class="bi bi-arrow-repeat"></i> <span id="repostCount">0</span>
+                            </a>
+                        </div>
+                        <div class="me-3">
+                            <a href="#" class="btn btn-sm btn-link text-decoration-none" onclick="likeQuestion(event)">
+                                <i class="bi bi-heart"></i> <span id="likeCount">0</span>
+                            </a>
+                        </div>
+                        <div>
+                            <a href="#" class="btn btn-sm btn-link text-decoration-none" onclick="shareQuestion(event, {{ question.id }})">
+                                <i class="bi bi-share"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted"><i class="bi bi-eye"></i> {{ question.id|view_count }} views</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="saveQuestion(this, {{ question.id }})">
+                            <i class="bi bi-bookmark"></i> Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Comments section -->
+        <div id="comments" class="comment-section" data-aos="fade-up">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>
+                    <i class="bi bi-chat-square-text me-2 text-primary"></i>
+                    <span class="highlight">{{ answers|length }} {{ 'Response' if answers|length == 1 else 'Responses' }}</span>
+                </h5>
+                <div class="d-flex align-items-center">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-sort-down"></i> Sort by
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="sortAnswers('newest')"><i class="bi bi-arrow-down me-2"></i>Newest first</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="sortAnswers('oldest')"><i class="bi bi-arrow-up me-2"></i>Oldest first</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="sortAnswers('likes')"><i class="bi bi-heart me-2"></i>Most likes</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Comment form -->
+            {% if current_user.is_authenticated and current_user.role == 'lawyer' %}
+                <div class="card mb-4 comment-form spotlight" data-aos="fade-up">
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('view_question', question_id=question.id) }}" id="commentForm">
+                            <div class="d-flex">
+                                <div class="rounded-circle text-white d-flex justify-content-center align-items-center me-2 float-animation" 
+                                     style="min-width: 40px; height: 40px; background: var(--gradient-2) !important;">
+                                    {{ current_user.username[0] }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="position-relative">
+                                        <textarea class="form-control mb-2" id="content" name="content" rows="3"
+                                                placeholder="Add your professional insights... Tag @LegalAI for AI support" 
+                                                style="border: none; background-color: #f8f9fa; border-radius: 15px; padding: 12px;"></textarea>
+                                        <div id="aiTagDetected" class="position-absolute bottom-0 end-0 p-2 d-none">
+                                            <span class="badge bg-info"><i class="bi bi-robot"></i> AI tag detected</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="form-text">
+                                            <i class="bi bi-robot icon-pulse text-info"></i> Include <span class="badge bg-info">@LegalAI</span> in your response for AI assistance
+                                        </div>
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                            <i class="bi bi-send me-1"></i> Submit Response
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% elif current_user.is_authenticated %}
+                <div class="alert alert-info d-flex align-items-center" data-aos="fade-up">
+                    <i class="bi bi-info-circle-fill me-2 icon-pulse"></i>
+                    <div>
+                        <strong>Notice:</strong> Only verified legal professionals can provide responses.
+                        <div class="mt-2">
+                            <a href="{{ url_for('verify_lawyer', user_id=current_user.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-person-badge me-1"></i> Apply for Legal Professional Status
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-warning d-flex align-items-center" data-aos="fade-up">
+                    <i class="bi bi-exclamation-triangle-fill me-2 icon-pulse"></i>
+                    <div>
+                        <strong>Authentication required:</strong> Please <a href="{{ url_for('login') }}" class="alert-link">login</a> or <a href="{{ url_for('register') }}" class="alert-link">register</a> to interact with this thread.
+                        <div class="mt-2">
+                            <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary me-2">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                            </a>
+                            <a href="{{ url_for('register') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-person-plus me-1"></i> Register
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Request AI Insights button -->
+            {% if current_user.is_authenticated %}
+                {% set has_ai_answer = false %}
+                {% for answer in answers %}
+                    {% if answer.is_ai_generated %}
+                        {% set has_ai_answer = true %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if not has_ai_answer %}
+                    <div class="text-center mb-4" data-aos="fade-up">
+                        <a href="{{ url_for('request_ai_answer', question_id=question.id) }}" class="btn btn-info">
+                            <i class="bi bi-robot me-1 icon-pulse"></i> Get AI Legal Insights
+                        </a>
+                        <div class="form-text mt-1">
+                            <i class="bi bi-info-circle"></i> Request instant AI analysis of this legal question
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <!-- Enhanced Comments list -->
+            <div id="answersContainer" data-aos="fade-up" data-aos-delay="100">
+                {% if answers %}
+                    {% for answer in answers %}
+                        {% if answer.is_ai_generated %}
+                        <div class="card mb-3 answer-card ai-card" data-created="{{ answer.created_at.timestamp() }}" data-likes="{{ answer.upvotes }}">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle text-white d-flex justify-content-center align-items-center me-2 float-animation"
+                                         style="width: 40px; height: 40px; background: linear-gradient(45deg, #2196F3, #00BCD4) !important;">
+                                        <i class="bi bi-robot"></i>
+                                    </div>
+                                    <div>
+                                        <div>
+                                            <span class="badge bg-info"><i class="bi bi-robot me-1"></i>LegalAI</span>
+                                            <small class="text-muted ms-2">AI-powered legal insights</small>
+                                        </div>
+                                        <small class="text-muted">{{ answer.created_at.strftime('%b %d') }} · {{ answer.created_at.strftime('%H:%M') }}</small>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    {% if answer.is_accepted %}
+                                        <span class="badge bg-primary"><i class="bi bi-pin-angle-fill me-1"></i> Pinned Response</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="card-body ai-response-container">
+                                <div class="mb-3 post-content ai-content">
+                                    {{ answer.content|safe }}
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-cpu"></i> AI Generated</span>
+                                    </div>
+                                    <div class="ai-feedback">
+                                        {% if current_user.is_authenticated %}
+                                            <a href="{{ url_for('upvote_answer', answer_id=answer.id) }}" class="btn btn-sm btn-link {% if answer.upvotes > 0 %}text-danger{% else %}text-secondary{% endif %}" onclick="likeAnswer(this, event)">
+                                                <i class="bi bi-heart{% if answer.upvotes > 0 %}-fill{% endif %}"></i> <span class="like-count">{{ answer.upvotes if answer.upvotes > 0 else '' }}</span>
+                                            </a>
+                                            {% if current_user.id == question.user_id and not answer.is_accepted %}
+                                                <a href="{{ url_for('accept_answer', answer_id=answer.id) }}" class="btn btn-sm btn-link text-secondary" onclick="pinAnswer(this, {{ answer.id }}, event)">
+                                                    <i class="bi bi-pin-angle"></i> Pin as Best
+                                                </a>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="bi bi-heart{% if answer.upvotes > 0 %}-fill text-danger{% endif %}"></i> {{ answer.upvotes if answer.upvotes > 0 else '0' }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="card mb-3 answer-card {% if answer.is_accepted %}border-primary{% endif %}" 
+                             style="margin-left: {% if not answer.is_ai_generated and answer.author.role == 'lawyer' %}40px{% else %}0px{% endif %};"
+                             data-created="{{ answer.created_at.timestamp() }}" 
+                             data-likes="{{ answer.upvotes }}">
+                            
+                            <div class="card-header d-flex justify-content-between align-items-center"
+                                 style="background-color: {% if answer.is_ai_generated %}rgba(25, 118, 210, 0.08){% elif answer.author.role == 'lawyer' %}rgba(76, 175, 80, 0.08){% else %}#f8f9fa{% endif %}; border-bottom: none;">
+                                
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle {% if answer.is_ai_generated %}bg-info{% elif answer.author.role == 'lawyer' %}bg-success{% else %}bg-secondary{% endif %} text-white d-flex justify-content-center align-items-center me-2 float-animation"
+                                         style="width: 36px; height: 36px; background: {% if answer.is_ai_generated %}linear-gradient(45deg, #2196F3, #00BCD4){% elif answer.author.role == 'lawyer' %}var(--gradient-1){% else %}var(--gradient-3){% endif %} !important;">
+                                        {% if answer.is_ai_generated %}
+                                            <i class="bi bi-robot"></i>
+                                        {% else %}
+                                            {{ answer.author.username[0] }}
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div>
+                                            {% if answer.is_ai_generated %}
+                                                <span class="badge bg-info"><i class="bi bi-robot me-1"></i>AI</span>
+                                            {% elif answer.author.role == 'lawyer' %}
+                                                <span class="badge bg-success"><i class="bi bi-briefcase-fill me-1"></i>Lawyer</span>
+                                            {% endif %}
+                                            <!-- Make username clickable for all users, but especially for lawyers -->
+                                            {% if answer.author.role == 'lawyer' %}
+                                                <a href="{{ url_for('view_profile', user_id=answer.author.id) }}" class="fw-bold text-decoration-none lawyer-profile-link">
+                                                    {{ answer.author.username }}
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('view_profile', user_id=answer.author.id) }}" class="fw-bold text-decoration-none">
+                                                    {{ answer.author.username }}
+                                                </a>
+                                            {% endif %}
+                                            <small class="text-muted">@{{ answer.author.username|lower }}</small>
+                                        </div>
+                                        <small class="text-muted">{{ answer.created_at.strftime('%b %d') }} · {{ answer.created_at.strftime('%H:%M') }}</small>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    {% if answer.is_accepted %}
+                                        <span class="badge bg-primary"><i class="bi bi-pin-angle-fill me-1"></i> Pinned Response</span>
+                                    {% endif %}
+                                    {% if current_user.is_authenticated and (current_user.id == answer.user_id or current_user.role == 'admin') %}
+                                        <div class="dropdown d-inline">
+                                            <button class="btn btn-sm btn-link text-dark" type="button" data-bs-toggle="dropdown">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i> Edit</a></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i> Delete</a></li>
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="mb-3 post-content">
+                                    {{ answer.content|safe }}
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% if answer.is_ai_generated %}
+                                            <span class="badge bg-light text-dark border"><i class="bi bi-cpu"></i> AI Generated</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="comment-actions">
+                                        {% if current_user.is_authenticated %}
+                                            <a href="{{ url_for('upvote_answer', answer_id=answer.id) }}" class="btn btn-sm btn-link {% if answer.upvotes > 0 %}text-danger{% else %}text-secondary{% endif %}" onclick="likeAnswer(this, event)">
+                                                <i class="bi bi-heart{% if answer.upvotes > 0 %}-fill{% endif %}"></i> <span class="like-count">{{ answer.upvotes if answer.upvotes > 0 else '' }}</span>
+                                            </a>
+                                            
+                                            {% if current_user.id == question.user_id and not answer.is_accepted %}
+                                                <a href="{{ url_for('accept_answer', answer_id=answer.id) }}" class="btn btn-sm btn-link text-secondary" onclick="pinAnswer(this, {{ answer.id }}, event)">
+                                                    <i class="bi bi-pin-angle"></i> Pin as Best
+                                                </a>
+                                            {% endif %}
+                                            
+                                            <button class="btn btn-sm btn-link text-secondary" onclick="toggleReplyForm({{ answer.id }})">
+                                                <i class="bi bi-reply"></i> Reply
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="bi bi-heart{% if answer.upvotes > 0 %}-fill text-danger{% endif %}"></i> {{ answer.upvotes if answer.upvotes > 0 else '0' }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Hidden reply form, shown when reply button is clicked -->
+                                {% if current_user.is_authenticated and current_user.role == 'lawyer' %}
+                                    <div class="card-footer bg-light">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="toggleReplyForm('{{ answer.id }}')">
+                                            <i class="bi bi-reply"></i> Reply
+                                        </button>
+                                        
+                                        <div id="replyForm-{{ answer.id }}" class="mt-3 reply-form" style="display: none;">
+                                            <form method="POST" action="{{ url_for('reply_to_answer', answer_id=answer.id) }}">
+                                                <div class="mb-3">
+                                                    <textarea class="form-control" name="content" rows="3" placeholder="Add your professional insights..."></textarea>
+                                                    <div class="form-text">
+                                                        <i class="bi bi-robot text-info"></i> Mention @LegalAI for AI assistance
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="toggleReplyForm('{{ answer.id }}')">Cancel</button>
+                                                    <button type="submit" class="btn btn-sm btn-primary">Post Reply</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if answer.replies and answer.replies|length > 0 %}
+                                    <div class="ms-4 mt-3 replies-container">
+                                        {% for reply in answer.replies %}
+                                            <div class="card mb-2 reply-card">
+                                                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center me-2" 
+                                                             style="width: 32px; height: 32px; font-size: 0.9rem; background: var(--gradient-{{ reply.id|modulo(3) }}) !important;">
+                                                            {{ reply.author.username[0] }}
+                                                        </div>
+                                                        <div>
+                                                            <!-- Make reply author name clickable -->
+                                                            <a href="{{ url_for('view_profile', user_id=reply.author.id) }}" class="fw-bold text-decoration-none">
+                                                                {{ reply.author.username }}
+                                                            </a>
+                                                            {% if reply.author.role == 'lawyer' %}
+                                                                <span class="badge bg-success ms-1"><i class="bi bi-patch-check-fill"></i> Legal Pro</span>
+                                                            {% elif reply.author.role == 'ai' %}
+                                                                <span class="badge bg-info ms-1"><i class="bi bi-robot"></i> AI</span>
+                                                            {% endif %}
+                                                            <br>
+                                                            <small class="text-muted">{{ reply.created_at.strftime('%b %d, %Y') }} · {{ reply.created_at.strftime('%H:%M') }}</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body py-2">
+                                                    {{ reply.content|replace('@LegalAI', '<span class="badge bg-info">@LegalAI</span>')|replace('@legalai', '<span class="badge bg-info">@legalai</span>')|safe }}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center p-5 bg-light rounded" data-aos="fade-up">
+                        <div class="float-animation">
+                            <i class="bi bi-chat-left-text" style="font-size: 3rem; color: var(--accent-color);"></i>
+                        </div>
+                        <h5 class="mt-3 gradient-text">No responses yet</h5>
+                        <p class="text-muted mb-3">Be the first to contribute to this discussion!</p>
+                        {% if current_user.is_authenticated and current_user.role == 'lawyer' %}
+                            <button class="btn btn-primary rounded-pill" onclick="focusCommentForm()">
+                                <i class="bi bi-chat-text-fill me-2"></i> Add Your Response
+                            </button>
+                        {% elif not current_user.is_authenticated %}
+                            <a href="{{ url_for('login') }}" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Login to Respond
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Author Card -->
+        <div class="card mb-4 tilt-effect" data-aos="fade-left">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-person-badge me-2 text-primary"></i>
+                <h5 class="mb-0">Author</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="rounded-circle text-white d-flex justify-content-center align-items-center mx-auto mb-3 float-animation" 
+                     style="width: 70px; height: 70px; font-size: 1.8rem; background: var(--gradient-{{ question.author.id|modulo(3) }}) !important;">
+                    {{ question.author.username[0] }}
+                </div>
+                <h5 class="mb-1">{{ question.author.username }}</h5>
+                <p class="text-muted mb-2">@{{ question.author.username|lower }}</p>
+                
+                {% if question.author.role == 'lawyer' %}
+                    <div class="badge bg-success mb-3">
+                        <i class="bi bi-patch-check-fill"></i> Legal Professional
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ question.author.id|toint * 3 + 5 }}</div>
+                        <div class="stat-label">Questions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ question.author.id|toint * 7 + 12 }}</div>
+                        <div class="stat-label">Answers</div>
+                    </div>
+                </div>
+                
+                {% if current_user.is_authenticated and current_user.id != question.author.id and question.author.role == 'lawyer' %}
+                    <div class="d-grid gap-2">
+                        <form method="POST" action="{{ url_for('follow_user', user_id=question.author.id) }}">
+                            {% if is_following %}
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-person-check-fill me-1"></i> Following
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-person-plus me-1"></i> Follow
+                                </button>
+                            {% endif %}
+                        </form>
+                        
+                        {% if is_following %}
+                            <a href="{{ url_for('chat', user_id=question.author.id) }}" class="btn btn-success btn-sm">
+                                <i class="bi bi-chat-dots-fill me-1"></i> Message
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('view_profile', user_id=question.author.id) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-person-vcard me-1"></i> View Profile
+                        </a>
+                    </div>
+                {% elif current_user.is_authenticated and current_user.id != question.author.id %}
+                    <div class="d-grid">
+                        <a href="{{ url_for('view_profile', user_id=question.author.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-person-vcard me-1"></i> View Profile
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<style>
+/* Style for clickable lawyer profiles */
+.lawyer-profile-link {
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.lawyer-profile-link:hover {
+    color: var(--accent-color);
+    text-decoration: underline !important;
+}
+
+/* Pulse animation for lawyer badges */
+.badge.bg-success {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
+    70% { box-shadow: 0 0 0 5px rgba(40, 167, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+}
+
+/* Enhanced AI Response Styling */
+.ai-card {
+    border: none;
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.ai-card:hover {
+    box-shadow: 0 8px 25px rgba(33, 150, 243, 0.15);
+    transform: translateY(-5px);
+}
+
+.ai-card .card-header {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.08), rgba(0, 188, 212, 0.08));
+    border-bottom: none;
+}
+
+.ai-response-container {
+    padding: 1.5rem;
+}
+
+.ai-content {
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.ai-content strong.text-primary {
+    display: block;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.ai-content ul, .ai-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.ai-content li {
+    margin-bottom: 0.5rem;
+}
+
+/* Pulsing effect for AI badge */
+.badge.bg-info {
+    animation: ai-pulse 2s infinite;
+}
+
+@keyframes ai-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(13, 202, 240, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0); }
+}
+
+/* Better disclaimer box */
+.ai-content .mt-3 {
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+</style>
+
+<script>
+// Track click on lawyer username to open profile
+function viewLawyerProfile(userId, event) {
+    // Prevent default behavior if it's a link
+    if (event) {
+        event.preventDefault();
+    }
+    
+    // Navigate to lawyer profile
+    window.location.href = "{{ url_for('view_profile', user_id='') }}" + userId;
+}
+
+// Function to toggle reply form
+function toggleReplyForm(answerId) {
+    const replyForm = document.getElementById(`replyForm-${answerId}`);
+    if (replyForm) {
+        if (replyForm.style.display === 'none') {
+            replyForm.style.display = 'block';
+            // Add animation
+            gsap.from(replyForm, {
+                height: 0,
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+            // Focus the textarea
+            const textarea = replyForm.querySelector('textarea');
+            if (textarea) {
+                textarea.focus();
+            }
+        } else {
+            // Animate closing
+            gsap.to(replyForm, {
+                height: 0,
+                opacity: 0,
+                duration: 0.2,
+                onComplete: () => {
+                    replyForm.style.display = 'none';
+                    replyForm.style.height = 'auto';
+                    replyForm.style.opacity = 1;
+                }
+            });
+        }
+    }
+}
+</script>

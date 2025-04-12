@@ -1,0 +1,85 @@
+/* static/css/style.css */
+body {
+    font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.jumbotron {
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 0.5rem;
+}
+
+/* Question styling */
+.question-metadata {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Answer styling */
+.answer {
+    border-left: 3px solid #007bff;
+    padding-left: 15px;
+    margin-bottom: 20px;
+}
+
+.lawyer-answer {
+    border-left: 3px solid #28a745;
+}
+
+.ai-answer {
+    border-left: 3px solid #17a2b8;
+    background-color: #f8f9ff;
+}
+
+.accepted-answer {
+    border: 1px solid #28a745;
+    background-color: #f0fff0;
+}
+
+/* Badge styling */
+.badge {
+    font-weight: 500;
+}
+
+/* Forms */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Footer */
+footer {
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .jumbotron {
+        padding: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+}

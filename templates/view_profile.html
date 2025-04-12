@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Enhanced Profile Card -->
+        <div class="card premium mb-4 tilt-effect" data-aos="fade-right">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-person-badge-fill me-2 icon-pulse text-primary"></i>
+                <h5 class="mb-0 gradient-text">Profile Information</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center mx-auto mb-3 float-animation" style="width: 100px; height: 100px; font-size: 2.5rem; background: var(--gradient-{{ profile_user.id|modulo(3) }}) !important;">
+                    {{ profile_user.username[0] }}
+                </div>
+                <h4 class="text-animated mb-1">{{ profile_user.username }}</h4>
+                <p class="text-muted mb-3">{{ profile_user.email }}</p>
+                
+                {% if profile_user.role == 'lawyer' %}
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="badge bg-primary rounded-pill px-3 py-2">
+                            <i class="bi bi-briefcase-fill me-1"></i> Legal Professional
+                        </div>
+                        {% if not profile_user.is_verified %}
+                            <div class="badge bg-warning text-dark rounded-pill px-3 py-2 ms-2">
+                                <i class="bi bi-hourglass-split me-1"></i> Pending Verification
+                            </div>
+                        {% else %}
+                            <div class="badge bg-success rounded-pill px-3 py-2 ms-2">
+                                <i class="bi bi-check-circle-fill me-1"></i> Verified
+                            </div>
+                        {% endif %}
+                    </div>
+                {% elif profile_user.role == 'admin' %}
+                    <div class="badge bg-danger rounded-pill px-3 py-2 mb-3">
+                        <i class="bi bi-shield-fill me-1"></i> Administrator
+                    </div>
+                {% else %}
+                    <div class="badge bg-info rounded-pill px-3 py-2 mb-3">
+                        <i class="bi bi-person-fill me-1"></i> Community Member
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-center gap-2 mt-4">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ questions|length }}</div>
+                        <div class="stat-label">Questions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ answers|length }}</div>
+                        <div class="stat-label">Answers</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ follower_count }}</div>
+                        <div class="stat-label">Followers</div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="text-start mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-calendar3 text-primary me-2"></i>
+                        <span><strong>Member since:</strong> {{ profile_user.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-clock-history text-primary me-2"></i>
+                        <span><strong>Last active:</strong> Today</span>
+                    </div>
+                </div>
+                
+                {% if current_user.is_authenticated and current_user.id != profile_user.id %}
+                    <div class="d-grid gap-2 mt-4">
+                        {% if profile_user.role == 'lawyer' %}
+                            <form method="POST" action="{{ url_for('follow_user', user_id=profile_user.id) }}">
+                                {% if is_following %}
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-person-check-fill me-1"></i> Following
+                                    </button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="bi bi-person-plus me-1"></i> Follow
+                                    </button>
+                                {% endif %}
+                            </form>
+                            
+                            {% if is_following %}
+                                <a href="{{ url_for('chat', user_id=profile_user.id) }}" class="btn btn-success">
+                                    <i class="bi bi-chat-dots-fill me-1"></i> Message
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Expertise Card (for lawyers) -->
+        {% if profile_user.role == 'lawyer' %}
+        <div class="card mb-4" data-aos="fade-right" data-aos-delay="100">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-briefcase me-2 text-primary"></i>
+                <h5 class="mb-0">Legal Expertise</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    {% if profile_user.expertise %}
+                        {% for area in profile_user.expertise %}
+                            <span class="badge bg-secondary me-1 mb-1">{{ area }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No expertise areas specified</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-8">
+        <div class="card mb-4" data-aos="fade-left">
+            <div class="card-body p-0">
+                <!-- Enhanced Tab Navigation -->
+                <ul class="nav nav-pills p-3 bg-light" id="activityTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active d-flex align-items-center" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab" aria-selected="true">
+                            <i class="bi bi-question-circle me-2"></i> Questions <span class="badge bg-light text-dark ms-2">{{ questions|length }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link d-flex align-items-center" id="answers-tab" data-bs-toggle="tab" data-bs-target="#answers" type="button" role="tab" aria-selected="false">
+                            <i class="bi bi-chat-dots me-2"></i> Answers <span class="badge bg-light text-dark ms-2">{{ answers|length }}</span>
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Enhanced Tab Content -->
+                <div class="tab-content px-4 py-3" id="activityTabsContent">
+                    <!-- Questions Tab -->
+                    <div class="tab-pane fade show active" id="questions" role="tabpanel">
+                        {% if questions %}
+                            <div id="questionItems">
+                                {% for question in questions %}
+                                    <div class="card mb-3 question-item border-0 shadow-sm" data-aos="fade-up">
+                                        <div class="card-body">
+                                            <h5 class="card-title"><a href="{{ url_for('view_question', question_id=question.id) }}" class="text-decoration-none">{{ question.title }}</a></h5>
+                                            <p class="card-text text-muted">{{ question.content[:150] }}{% if question.content|length > 150 %}...{% endif %}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">{{ question.created_at.strftime('%b %d, %Y') }}</small>
+                                                <a href="{{ url_for('view_question', question_id=question.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5" data-aos="fade-up">
+                                <i class="bi bi-question-circle" style="font-size: 3rem; color: var(--secondary-color);"></i>
+                                <h5 class="mt-3 text-muted">No questions yet</h5>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Answers Tab -->
+                    <div class="tab-pane fade" id="answers" role="tabpanel">
+                        {% if answers %}
+                            <div id="answerItems">
+                                {% for answer in answers %}
+                                    <div class="card mb-3 answer-item border-0 shadow-sm" data-aos="fade-up">
+                                        <div class="card-body">
+                                            <p class="card-text">{{ answer.content[:200] }}{% if answer.content|length > 200 %}...{% endif %}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">{{ answer.created_at.strftime('%b %d, %Y') }}</small>
+                                                <a href="{{ url_for('view_question', question_id=answer.question_id) }}" class="btn btn-sm btn-outline-primary">View Question</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5" data-aos="fade-up">
+                                <i class="bi bi-chat-square-text" style="font-size: 3rem; color: var(--accent-color);"></i>
+                                <h5 class="mt-3 text-muted">No answers yet</h5>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Stats boxes */
+.stat-box {
+    background: linear-gradient(145deg, #f5f7fa, #ffffff);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    border-radius: 10px;
+    padding: 10px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Question and answer cards with nice hover effect */
+.question-item, .answer-item {
+    transition: all 0.3s ease;
+}
+
+.question-item:hover, .answer-item:hover {
+    box-shadow: 0 10px 30px rgba(67, 97, 238, 0.1) !important;
+    transform: translateY(-5px);
+}
+</style>
+
+<script>
+// Tab animation
+document.addEventListener('DOMContentLoaded', function() {
+    const tabLinks = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabLinks.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', event => {
+            const target = document.querySelector(event.target.getAttribute('data-bs-target'));
+            gsap.fromTo(target, 
+                { opacity: 0, y: 10 },
+                { 
+                    opacity: 1, 
+                    y: 0, 
+                    duration: 0.4,
+                    clearProps: "all"
+                }
+            );
+        });
+    });
+});
+</script>
+{% endblock %}

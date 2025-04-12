@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Enhanced Profile Card -->
+        <div class="card premium mb-4 tilt-effect" data-aos="fade-right">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-person-badge-fill me-2 icon-pulse text-primary"></i>
+                <h5 class="mb-0 gradient-text">Profile Information</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center mx-auto mb-3 float-animation" style="width: 100px; height: 100px; font-size: 2.5rem; background: var(--gradient-1) !important;">
+                    {{ current_user.username[0] }}
+                </div>
+                <h4 class="text-animated mb-1">{{ current_user.username }}</h4>
+                <p class="text-muted mb-3">{{ current_user.email }}</p>
+                
+                {% if current_user.role == 'lawyer' %}
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="badge bg-primary rounded-pill px-3 py-2">
+                            <i class="bi bi-briefcase-fill me-1"></i> Legal Professional
+                        </div>
+                        {% if not current_user.is_verified %}
+                            <div class="badge bg-warning text-dark rounded-pill px-3 py-2 ms-2">
+                                <i class="bi bi-clock-history me-1"></i> Pending Verification
+                            </div>
+                        {% else %}
+                            <div class="badge bg-success rounded-pill px-3 py-2 ms-2">
+                                <i class="bi bi-patch-check-fill me-1"></i> Verified
+                            </div>
+                        {% endif %}
+                    </div>
+                {% elif current_user.role == 'admin' %}
+                    <div class="badge bg-danger rounded-pill px-3 py-2 mb-3">
+                        <i class="bi bi-shield-fill me-1"></i> Administrator
+                    </div>
+                {% else %}
+                    <div class="badge bg-info rounded-pill px-3 py-2 mb-3">
+                        <i class="bi bi-person-fill me-1"></i> Community Member
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-center gap-2 mt-4">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ questions|length }}</div>
+                        <div class="stat-label">Questions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ answers|length }}</div>
+                        <div class="stat-label">Answers</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ answers|selectattr('is_accepted', 'eq', true)|list|length }}</div>
+                        <div class="stat-label">Accepted</div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="text-start mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-calendar3 text-primary me-2"></i>
+                        <span><strong>Member since:</strong> 
+                            {% if current_user.created_at %}
+                                {{ current_user.created_at|format_date }}
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-clock-history text-primary me-2"></i>
+                        <span><strong>Last active:</strong> Today</span>
+                    </div>
+                </div>
+                
+                <div class="d-grid mt-4">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Expertise Card (for lawyers) -->
+        {% if current_user.role == 'lawyer' %}
+        <div class="card mb-4" data-aos="fade-right" data-aos-delay="100">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-briefcase me-2 text-primary"></i>
+                <h5 class="mb-0">Legal Expertise</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge bg-secondary me-1 mb-1">Family Law</span>
+                    <span class="badge bg-secondary me-1 mb-1">Property Law</span>
+                    <span class="badge bg-secondary me-1 mb-1">Business Law</span>
+                    <span class="badge bg-light text-dark border me-1 mb-1">+ Add more</span>
+                </div>
+                <p class="small text-muted">
+                    <i class="bi bi-info-circle me-1"></i> 
+                    Adding your areas of expertise helps users find appropriate legal advice.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Achievements Card -->
+        <div class="card mb-4" data-aos="fade-right" data-aos-delay="200">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-award me-2 text-primary"></i>
+                <h5 class="mb-0">Achievements</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush achievement-list">
+                    <div class="list-group-item d-flex align-items-center">
+                        <div class="achievement-badge bg-primary text-white me-3">
+                            <i class="bi bi-chat-square-text-fill"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">First Post</h6>
+                            <small class="text-muted">Posted your first question or answer</small>
+                        </div>
+                    </div>
+                    
+                    {% if answers|length > 0 %}
+                    <div class="list-group-item d-flex align-items-center">
+                        <div class="achievement-badge bg-success text-white me-3">
+                            <i class="bi bi-patch-check-fill"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Helpful Member</h6>
+                            <small class="text-muted">Provided answers to the community</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if answers|selectattr('is_accepted', 'eq', true)|list|length > 0 %}
+                    <div class="list-group-item d-flex align-items-center">
+                        <div class="achievement-badge bg-warning text-dark me-3">
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Expert Advice</h6>
+                            <small class="text-muted">Had answers marked as accepted solution</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_user.role == 'lawyer' and current_user.is_verified %}
+                    <div class="list-group-item d-flex align-items-center">
+                        <div class="achievement-badge bg-info text-white me-3">
+                            <i class="bi bi-shield-check-fill"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Verified Professional</h6>
+                            <small class="text-muted">Credentials verified by LegalConnect</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card mb-4" data-aos="fade-left">
+            <div class="card-body p-0">
+                <!-- Enhanced Tab Navigation -->
+                <ul class="nav nav-pills p-3 bg-light" id="activityTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active d-flex align-items-center" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab" aria-selected="true">
+                            <i class="bi bi-question-circle me-2"></i> My Questions <span class="badge bg-primary rounded-pill ms-2">{{ questions|length }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link d-flex align-items-center" id="answers-tab" data-bs-toggle="tab" data-bs-target="#answers" type="button" role="tab" aria-selected="false">
+                            <i class="bi bi-chat-left-text me-2"></i> My Answers <span class="badge bg-primary rounded-pill ms-2">{{ answers|length }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link d-flex align-items-center" id="saved-tab" data-bs-toggle="tab" data-bs-target="#saved" type="button" role="tab" aria-selected="false">
+                            <i class="bi bi-bookmark me-2"></i> Saved <span class="badge bg-primary rounded-pill ms-2">0</span>
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Enhanced Tab Content -->
+                <div class="tab-content px-4 py-3" id="activityTabsContent">
+                    <!-- Questions Tab -->
+                    <div class="tab-pane fade show active" id="questions" role="tabpanel">
+                        {% if questions %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0"><i class="bi bi-question-square text-primary me-2"></i> Your Questions</h5>
+                                <div class="input-group spotlight" style="width: 250px;">
+                                    <span class="input-group-text bg-light border-0">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-0 shadow-none" id="questionSearch" placeholder="Search questions..." onkeyup="filterItems('questionSearch', 'questionItems')">
+                                </div>
+                            </div>
+                            <div id="questionItems">
+                                {% for question in questions %}
+                                    <div class="card mb-3 question-item" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between">
+                                                <h5 class="card-title highlight mb-1">
+                                                    <a href="{{ url_for('view_question', question_id=question.id) }}" class="text-decoration-none">{{ question.title }}</a>
+                                                </h5>
+                                                <span class="badge {% if question.answers|length > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                                                    {{ question.answers|length }} answer{% if question.answers|length != 1 %}s{% endif %}
+                                                </span>
+                                            </div>
+                                            <p class="text-muted small mb-2">Posted on {{ question.created_at|format_date }}</p>
+                                            <p class="card-text">{{ question.content|truncate(150) }}</p>
+                                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                                <div>
+                                                    {% if question.category %}
+                                                        <span class="badge bg-primary">{{ question.category }}</span>
+                                                    {% endif %}
+                                                    {% if question.tags %}
+                                                        {% for tag in question.tags.split(',') %}
+                                                            <span class="badge bg-light text-dark border me-1">#{{ tag.strip() }}</span>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('view_question', question_id=question.id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5" data-aos="fade-up">
+                                <i class="bi bi-chat-square-text icon-pulse" style="font-size: 3rem; color: var(--accent-color);"></i>
+                                <h5 class="mt-3 gradient-text">No questions yet</h5>
+                                <p class="text-muted mb-4">You haven't asked any questions yet. Start a discussion with the legal community!</p>
+                                <a href="{{ url_for('ask_question') }}" class="btn btn-primary rounded-pill">
+                                    <i class="bi bi-plus-lg me-1"></i> Ask a Question
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Answers Tab -->
+                    <div class="tab-pane fade" id="answers" role="tabpanel">
+                        {% if answers %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0"><i class="bi bi-chat-square-text text-primary me-2"></i> Your Answers</h5>
+                                <div class="input-group spotlight" style="width: 250px;">
+                                    <span class="input-group-text bg-light border-0">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-0 shadow-none" id="answerSearch" placeholder="Search answers..." onkeyup="filterItems('answerSearch', 'answerItems')">
+                                </div>
+                            </div>
+                            <div id="answerItems">
+                                {% for answer in answers %}
+                                    <div class="card mb-3 answer-item" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between">
+                                                <h5 class="card-title mb-1">
+                                                    <a href="{{ url_for('view_question', question_id=answer.question_id) }}" class="text-decoration-none">
+                                                        Re: {% if answer.question_id %}{{ answer.question_id }}{% else %}Unknown Question{% endif %}                                                    </a>
+                                                </h5>
+                                                {% if answer.is_accepted %}
+                                                    <span class="badge bg-success d-flex align-items-center">
+                                                        <i class="bi bi-check-circle-fill me-1"></i> Accepted Answer
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            <p class="text-muted small mb-2">Answered on {{ answer.created_at|format_date }}</p>
+                                            <p class="card-text">{{ answer.content|truncate(150) }}</p>
+                                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                                <div>
+                                                    <span class="text-muted me-3">
+                                                        <i class="bi bi-hand-thumbs-up"></i> {{ answer.upvotes }} upvotes
+                                                    </span>
+                                                </div>
+                                                <a href="{{ url_for('view_question', question_id=answer.question_id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i> View Full Thread
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5" data-aos="fade-up">
+                                <i class="bi bi-chat-quote icon-pulse" style="font-size: 3rem; color: var(--primary-color);"></i>
+                                <h5 class="mt-3 gradient-text">No answers yet</h5>
+                                <p class="text-muted mb-4">You haven't answered any questions yet. Share your legal knowledge with others!</p>
+                                <a href="{{ url_for('browse_questions') }}" class="btn btn-primary rounded-pill">
+                                    <i class="bi bi-search me-1"></i> Browse Questions to Answer
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Saved Tab -->
+                    <div class="tab-pane fade" id="saved" role="tabpanel">
+                        <div class="text-center py-5" data-aos="fade-up">
+                            <i class="bi bi-bookmark-star float-animation" style="font-size: 3rem; color: var(--warning-color);"></i>
+                            <h5 class="mt-3 gradient-text">No saved items</h5>
+                            <p class="text-muted mb-4">You haven't saved any questions or answers yet.</p>
+                            <div class="small text-muted">
+                                <i class="bi bi-info-circle me-1"></i> 
+                                Tip: Click the bookmark icon on any question to save it for later.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Community Stats -->
+        <div class="card" data-aos="fade-up">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-graph-up me-2 text-primary"></i>
+                <h5 class="mb-0">Community Impact</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <i class="bi bi-people-fill text-primary" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h3 class="mb-1">{{ questions|length * 5 + 2 }}</h3>
+                        <p class="text-muted small">People Helped</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <i class="bi bi-eye-fill text-primary" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h3 class="mb-1">{{ (answers|length * 47 + questions|length * 32)|toint }}</h3>
+                        <p class="text-muted small">Post Views</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <i class="bi bi-award-fill text-primary" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h3 class="mb-1">{{ answers|selectattr('is_accepted', 'eq', true)|list|length * 10 + answers|length * 2 + questions|length }}</h3>
+                        <p class="text-muted small">Reputation Points</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ ((answers|selectattr('is_accepted', 'eq', true)|list|length * 10 + answers|length * 2 + questions|length) / 500) * 100 }}%" aria-valuenow="{{ answers|selectattr('is_accepted', 'eq', true)|list|length * 10 + answers|length * 2 + questions|length }}" aria-valuemin="0" aria-valuemax="500"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mt-1">
+                    <span>Beginner</span>
+                    <span>Expert</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="profileForm">
+                    <div class="mb-3">
+                        <label for="displayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="displayName" value="{{ current_user.username }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" value="{{ current_user.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Bio</label>
+                        <textarea class="form-control" id="bio" rows="3" placeholder="Tell the community about yourself..."></textarea>
+                    </div>
+                    {% if current_user.role == 'lawyer' %}
+                    <div class="mb-3">
+                        <label class="form-label">Areas of Expertise</label>
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <div class="badge bg-secondary p-2">Family Law <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5em;"></button></div>
+                            <div class="badge bg-secondary p-2">Property Law <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5em;"></button></div>
+                            <div class="badge bg-secondary p-2">Business Law <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5em;"></button></div>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Add expertise">
+                            <button class="btn btn-outline-secondary" type="button">Add</button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Stats boxes */
+.stat-box {
+    background: linear-gradient(145deg, #f5f7fa, #ffffff);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    border-radius: 10px;
+    padding: 10px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Achievement badges */
+.achievement-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.achievement-list .list-group-item {
+    border: none;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.achievement-list .list-group-item:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+    transform: translateX(5px);
+}
+
+.achievement-list .list-group-item:hover .achievement-badge {
+    transform: scale(1.1) rotate(10deg);
+}
+
+/* Question and answer cards */
+.question-item:hover, .answer-item:hover {
+    box-shadow: 0 10px 30px rgba(67, 97, 238, 0.1);
+    transform: translateY(-5px);
+}
+</style>
+
+<script>
+// Filter items in the lists
+function filterItems(inputId, containerId) {
+    const input = document.getElementById(inputId);
+    const filter = input.value.toUpperCase();
+    const container = document.getElementById(containerId);
+    const items = container.getElementsByClassName(containerId === 'questionItems' ? 'question-item' : 'answer-item');
+    
+    for (let i = 0; i < items.length; i++) {
+        const titleElement = items[i].querySelector('h5');
+        const contentElement = items[i].querySelector('.card-text');
+        
+        if (titleElement || contentElement) {
+            const titleText = titleElement.textContent || titleElement.innerText;
+            const contentText = contentElement.textContent || contentElement.innerText;
+            
+            if (titleText.toUpperCase().indexOf(filter) > -1 || contentText.toUpperCase().indexOf(filter) > -1) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
+}
+
+// Save profile changes
+function saveProfile() {
+    // Simulate saving profile
+    const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+    
+    // Show toast
+    const toast = document.createElement('div');
+    toast.className = 'position-fixed bottom-0 end-0 p-3';
+    toast.style.zIndex = '1050';
+    toast.innerHTML = `
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                <strong class="me-auto">LegalConnect</strong>
+                <small>Just now</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Profile updated successfully!
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    modal.hide();
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Tab animation
+document.addEventListener('DOMContentLoaded', function() {
+    const tabLinks = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabLinks.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', event => {
+            const target = document.querySelector(event.target.getAttribute('data-bs-target'));
+            gsap.fromTo(target, 
+                { opacity: 0, y: 10 },
+                { 
+                    opacity: 1, 
+                    y: 0, 
+                    duration: 0.4,
+                    clearProps: "all"
+                }
+            );
+        });
+    });
+});
+</script>
+{% endblock %}

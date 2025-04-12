@@ -1,0 +1,110 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+.env
+.venv
+venv/
+ENV/
+.python-version
+*.log
+
+# Firebase
+firebase.json
+serviceAccountKey.json
+*.pem
+.firebase/
+firebaserc
+firebase-debug.log
+
+# Flask
+instance/
+.webassets-cache
+flask_session/
+
+# Database
+*.sqlite
+*.db
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+.project
+.pydevproject
+.settings/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment variables
+.env
+.flaskenv
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Application secrets and credentials
+*secret*
+*credential*
+*cred*
+*key*
+*token*
+config.json
+
+# Large media files and assets
+media/
+node_modules/
+static/uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+*.pyc
+*.pyo
+*.pyd
+.cache/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage/
+.tox/
+.nox/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
